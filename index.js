@@ -48,7 +48,7 @@ app.use("/api/sensor", sensorRoutes);
 app.use((req, res) => {
   res.status(404).json({
     status: "error",
-    message: `Endpoint ${req.originalUrl} tidak ditemukan di server ini.`,
+    message: `Endpoint ${req.originalUrl} Not found.`,
   });
 });
 
