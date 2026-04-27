@@ -1,9 +1,16 @@
 // index.js
 const express = require("express");
 const cors = require("cors");
+require('dotenv').config();
+const pool = require('./config/db');
+
+//import routes
+const pumpRoutes = require('./routes/pumpRoutes');
+const sensorRoutes = require('./routes/sensorRoutes');
+
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -13,7 +20,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     status: "success",
-    message: "Smart Agriculture API is running smoothly!",
+    message: "Smart Agriculture API is running smooth operator!",
   });
 });
 
@@ -31,46 +38,21 @@ app.get("/api/crops", (req, res) => {
 });
 
 // Endpoint Pump Control (Frontend -> Express -> Node-RED)
-app.post("/api/pump/control", async (req, res) => {
-  try {
-    const { command } = req.body;
+app.use("/api/pump", pumpRoutes);
 
-    if (command !== "ON" && command !== "OFF") {
-      return res.status(400).json({
-        status: "error",
-        message: "Perintah tidak valid. Gunakan 'ON' atau 'OFF'.",
-      });
-    }
 
-    const nodeRedUrl = "http://103.93.160.128:1880/kebun/pompa/cmd";
+// Endpoint Get Latest Telemetry (Frontend -> Express -> Node-RED)
+app.use("/api/sensor", sensorRoutes);
 
-    const response = await fetch(nodeRedUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ payload: command }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Node-RED merespons dengan status: ${response.status}`);
-    }
-
-    res.json({
-      status: "success",
-      message: `Perintah pompa [${command}] berhasil diteruskan ke sistem OT.`,
-    });
-  } catch (error) {
-    console.error("Error saat menghubungi Node-RED:", error.message);
-    res.status(500).json({
-      status: "error",
-      message: "Gagal menghubungi Node-RED Backend.",
-      detail: error.message,
-    });
-  }
+// 404 handler error 
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: `Endpoint ${req.originalUrl} tidak ditemukan di server ini.`,
+  });
 });
 
 // Run server
 app.listen(PORT, () => {
-  console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
+  console.log(`server running on http://localhost:${PORT}`);
 });
