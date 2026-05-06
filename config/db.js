@@ -1,6 +1,6 @@
 // config/db.js
 const { Pool } = require("pg");
-require("dotenv").config(); // Membaca file .env
+require("dotenv").config(); // read env
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -10,7 +10,7 @@ const pool = new Pool({
   database: process.env.DB_NAME,
 });
 
-// Tes koneksi
+// Test connection
 pool.connect((err, client, release) => {
   if (err) {
     console.error("failed to connect to PostgreSQL:", err.stack);
