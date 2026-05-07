@@ -133,4 +133,37 @@ router.patch("/:id/mode", async (req, res) => {
   }
 });
 
+// Endpoint untuk Mengganti Tanaman pada Device
+router.patch("/:id/crop", async (req, res) => {
+  try {
+    const { selected_crop_id } = req.body;
+    const deviceId = req.params.id;
+
+    if (!selected_crop_id) {
+      return res.status(400).json({ status: "error", message: "selected_crop_id wajib diisi" });
+    }
+
+    const query = `
+      UPDATE devices 
+      SET selected_crop_id = $1, update_at = NOW()
+      WHERE id = $2
+      RETURNING id, device_name, selected_crop_id;
+    `;
+    
+    const result = await pool.query(query, [selected_crop_id, deviceId]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ status: "error", message: "Device tidak ditemukan" });
+    }
+
+    res.json({
+      status: "success",
+      message: "Tanaman pada device berhasil diganti",
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error updating device crop:", error);
+    res.status(500).json({ status: "error", message: "Gagal mengganti tanaman" });
+  }
+}); 
 module.exports = router;
