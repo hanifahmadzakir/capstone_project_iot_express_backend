@@ -27,8 +27,8 @@ router.get("/", async (req, res) => {
 
 // POST: Daftarkan perangkat ESP32 baru
 router.get("/register", async (req, res) => {
-    // Note: Harusnya ini POST, tapi kita bahas logika POST-nya di bawah.
-}); // (Wait, let me write the proper POST request for you)
+    // Note: place holder
+});
 
 router.post("/register", async (req, res) => {
   try {

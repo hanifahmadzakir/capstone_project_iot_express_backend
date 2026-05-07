@@ -16,7 +16,7 @@ router.post("/control", async (req, res) => {
       });
     }
 
-    // Hit API Node-RED (Sekarang menggunakan LOCALHOST)
+    // Hit API Node-RED
     const nodeRedUrl = "http://localhost:1880/kebun/pompa/cmd";
     const response = await fetch(nodeRedUrl, {
       method: "POST",
@@ -63,7 +63,7 @@ router.post("/log", async (req, res) => {
 
       const event_type = triggering_event || "Manual Trigger";
 
-      // 3. Simpan ke Database PostgreSQL (Gunakan nama kolom baru: duration_seconds)
+      // 3. Save data to Database
       const query = `
         INSERT INTO pump_logs 
         (device_id, start_time, end_time, duration_seconds, total_electric_kwh, total_cost, triggering_event)

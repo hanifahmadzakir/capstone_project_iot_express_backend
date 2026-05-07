@@ -81,7 +81,6 @@ router.post("/evaluate", async (req, res) => {
     if (pump_command) {
       const nodeRedUrl = "http://localhost:1880/kebun/pompa/cmd";
       
-      // Kita pakai fetch untuk menembak API Pompa yang sudah kita buat sebelumnya
       await fetch(nodeRedUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
