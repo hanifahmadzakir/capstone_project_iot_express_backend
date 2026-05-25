@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  express-api:
+    image: iot-express-api:latest
+    container_name: iot-express-api-backend
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    restart: unless-stopped

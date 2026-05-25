@@ -3,10 +3,13 @@ const express = require("express");
 const router = express.Router();
 const pool = require('../config/db');
 
+// ==========================================
 // Endpoint: GET /api/sensor/latest
+// Mengambil telemetri sensor terakhir
+// ==========================================
 router.get("/latest", async (req, res) => {
   try {
-    const nodeRedUrl = "http://localhost:1880/kebun/sensor/latest";
+    const nodeRedUrl = `${process.env.NODE_RED_BASE_URL}/kebun/sensor/latest`;
     const response = await fetch(nodeRedUrl);
 
     if (!response.ok) {
@@ -26,7 +29,39 @@ router.get("/latest", async (req, res) => {
   }
 });
 
+// ==========================================
+// Endpoint: GET /api/sensor/pump-status
+// Mengambil status pompa terakhir (Proxy)
+// ==========================================
+router.get("/pump-status", async (req, res) => {
+  try {
+    const nodeRedUrl = `${process.env.NODE_RED_BASE_URL}/kebun/pompa/status`;
+    const response = await fetch(nodeRedUrl);
+
+    if (!response.ok) {
+      throw new Error(`Node-RED response with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Meneruskan data langsung ke Frontend
+    res.json({
+      status: "success",
+      data: data
+    });
+  } catch (error) {
+    console.error("Error fetching pump status from Node-RED:", error.message);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch pump status from OT system.",
+      data: { Pump: "UNKNOWN" }
+    });
+  }
+});
+
+// ==========================================
 // Endpoint Rules Engine: Mengevaluasi telemetri sensor
+// ==========================================
 router.post("/evaluate", async (req, res) => {
   try {
     const { device_id, soil_moisture } = req.body;
@@ -35,7 +70,7 @@ router.post("/evaluate", async (req, res) => {
       return res.status(400).json({ status: "error", message: "device_id dan soil_moisture wajib dikirim" });
     }
 
-// 1. Ambil data tanaman DAN status mode auto alat saat ini
+    // 1. Ambil data tanaman DAN status mode auto alat saat ini
     const query = `
       SELECT d.device_name, d.is_auto_mode, c.name as crop_name, c.min_moisture, c.max_moisture
       FROM devices d
@@ -52,7 +87,6 @@ router.post("/evaluate", async (req, res) => {
     const cropInfo = rows[0];
 
     // --- FITUR AUTO / MANUAL ---
-    // Jika mode auto dimatikan (false), langsung hentikan proses evaluasi di sini.
     if (!cropInfo.is_auto_mode) {
       return res.json({
         status: "success",
@@ -68,6 +102,7 @@ router.post("/evaluate", async (req, res) => {
 
     let action_taken = "NONE";
     let pump_command = null;
+    
     // 2. Evaluasi Logika (Rules Engine)
     if (soil_moisture < cropInfo.min_moisture) {
       action_taken = "TURN_ON_PUMP";
@@ -79,7 +114,7 @@ router.post("/evaluate", async (req, res) => {
 
     // 3. Eksekusi Perintah ke Node-RED (Jika ada aksi yang harus diambil)
     if (pump_command) {
-      const nodeRedUrl = "http://localhost:1880/kebun/pompa/cmd";
+      const nodeRedUrl = `${process.env.NODE_RED_BASE_URL}/kebun/pompa/cmd`;
       
       await fetch(nodeRedUrl, {
         method: "POST",

@@ -54,7 +54,7 @@ const server = app.listen(PORT, () => {
 const gracefulShutdown = () => {
   console.log("\n[SYSTEM] Menerima sinyal terminasi. Menjalankan Graceful Shutdown...");
   
-  // 1. Berhenti menerima request HTTP baru
+  // 1. stop receiving new requests, 
   server.close(() => {
     console.log("[SYSTEM] HTTP Server ditutup. Tidak ada request baru yang diterima.");
     
