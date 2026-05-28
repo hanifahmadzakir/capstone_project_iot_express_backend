@@ -1,33 +1,35 @@
 // routes/deviceRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 // GET: Ambil semua daftar perangkat beserta info tanamannya
 router.get("/", async (req, res) => {
   try {
     // Query untuk mengambil data perangkat beserta info tanaman yang dipilih
     const query = `
-      SELECT d.id, d.device_name, d.mqtt_topic, d.current_status, d.last_seen,
+      SELECT d.id, d.device_name, d.mqtt_topic, d.current_status, d.last_seen, d.is_auto_mode, d.update_at, d.selected_crop_id,
              c.name AS crop_name, c.min_moisture, c.max_moisture
       FROM devices d
       LEFT JOIN crop c ON d.selected_crop_id = c.id
     `;
     const result = await pool.query(query);
-    
+
     res.json({
       status: "success",
       data: result.rows,
     });
   } catch (error) {
     console.error("Error fetching devices:", error.message);
-    res.status(500).json({ status: "error", message: "Gagal mengambil data perangkat" });
+    res
+      .status(500)
+      .json({ status: "error", message: "Gagal mengambil data perangkat" });
   }
 });
 
 // POST: Daftarkan perangkat ESP32 baru
 router.get("/register", async (req, res) => {
-    // Note: place holder
+  // Note: place holder
 });
 
 router.post("/register", async (req, res) => {
@@ -38,7 +40,8 @@ router.post("/register", async (req, res) => {
     if (!user_id || !selected_crop_id || !device_name || !mqtt_topic) {
       return res.status(400).json({
         status: "error",
-        message: "Semua field (user_id, selected_crop_id, device_name, mqtt_topic) harus diisi!"
+        message:
+          "Semua field (user_id, selected_crop_id, device_name, mqtt_topic) harus diisi!",
       });
     }
 
@@ -47,18 +50,22 @@ router.post("/register", async (req, res) => {
       VALUES ($1, $2, $3, $4, true, NOW(), NOW())
       RETURNING *;
     `;
-    
+
     const values = [user_id, selected_crop_id, device_name, mqtt_topic];
     const result = await pool.query(query, values);
 
     res.status(201).json({
       status: "success",
       message: "Perangkat ESP32 berhasil didaftarkan!",
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.error("Error registering device:", error.message);
-    res.status(500).json({ status: "error", message: "Gagal mendaftarkan perangkat", detail: error.message });
+    res.status(500).json({
+      status: "error",
+      message: "Gagal mendaftarkan perangkat",
+      detail: error.message,
+    });
   }
 });
 
@@ -68,7 +75,9 @@ router.patch("/status", async (req, res) => {
     const { device_id, status } = req.body;
 
     if (!device_id || !status) {
-      return res.status(400).json({ status: "error", message: "device_id dan status wajib diisi" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "device_id dan status wajib diisi" });
     }
 
     // Konversi status teks ke Boolean (ONLINE = true, OFFLINE = false)
@@ -81,21 +90,25 @@ router.patch("/status", async (req, res) => {
       WHERE id = $3
       RETURNING id, device_name, current_status, last_seen;
     `;
-    
+
     const result = await pool.query(query, [isOnline, lastSeen, device_id]);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ status: "error", message: "Device tidak ditemukan" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Device tidak ditemukan" });
     }
 
     res.json({
       status: "success",
       message: `Status device berhasil diubah menjadi ${status}`,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.error("Error updating device status:", error);
-    res.status(500).json({ status: "error", message: "Gagal update status device" });
+    res
+      .status(500)
+      .json({ status: "error", message: "Gagal update status device" });
   }
 });
 
@@ -104,8 +117,11 @@ router.patch("/:id/mode", async (req, res) => {
     const { is_auto_mode } = req.body;
     const deviceId = req.params.id;
 
-    if (typeof is_auto_mode !== 'boolean') {
-      return res.status(400).json({ status: "error", message: "is_auto_mode harus berupa boolean (true/false)" });
+    if (typeof is_auto_mode !== "boolean") {
+      return res.status(400).json({
+        status: "error",
+        message: "is_auto_mode harus berupa boolean (true/false)",
+      });
     }
 
     const query = `
@@ -114,22 +130,26 @@ router.patch("/:id/mode", async (req, res) => {
       WHERE id = $2
       RETURNING id, device_name, is_auto_mode;
     `;
-    
+
     const result = await pool.query(query, [is_auto_mode, deviceId]);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ status: "error", message: "Device tidak ditemukan" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Device tidak ditemukan" });
     }
 
     const modeName = is_auto_mode ? "AUTO" : "MANUAL";
     res.json({
       status: "success",
       message: `Mode device berhasil diubah ke ${modeName}`,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.error("Error updating device mode:", error);
-    res.status(500).json({ status: "error", message: "Gagal update mode device" });
+    res
+      .status(500)
+      .json({ status: "error", message: "Gagal update mode device" });
   }
 });
 
@@ -140,7 +160,9 @@ router.patch("/:id/crop", async (req, res) => {
     const deviceId = req.params.id;
 
     if (!selected_crop_id) {
-      return res.status(400).json({ status: "error", message: "selected_crop_id wajib diisi" });
+      return res
+        .status(400)
+        .json({ status: "error", message: "selected_crop_id wajib diisi" });
     }
 
     const query = `
@@ -149,21 +171,25 @@ router.patch("/:id/crop", async (req, res) => {
       WHERE id = $2
       RETURNING id, device_name, selected_crop_id;
     `;
-    
+
     const result = await pool.query(query, [selected_crop_id, deviceId]);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ status: "error", message: "Device tidak ditemukan" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Device tidak ditemukan" });
     }
 
     res.json({
       status: "success",
       message: "Tanaman pada device berhasil diganti",
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.error("Error updating device crop:", error);
-    res.status(500).json({ status: "error", message: "Gagal mengganti tanaman" });
+    res
+      .status(500)
+      .json({ status: "error", message: "Gagal mengganti tanaman" });
   }
-}); 
+});
 module.exports = router;
